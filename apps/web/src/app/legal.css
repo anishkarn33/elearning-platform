@@ -1,0 +1,19 @@
+* {
+  font-family: sans-serif !important;
+}
+
+li,
+p {
+  /* color: #555 !important; */
+  font-size: 14px !important;
+  line-height: 21px !important;
+}
+
+h3 {
+  margin-top: 30px !important;
+  font-size: 18px !important;
+}
+
+ul li {
+  list-style-type: disc;
+}

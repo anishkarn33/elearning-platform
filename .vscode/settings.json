@@ -1,0 +1,9 @@
+{
+  "flake8.path": [
+    "./backend/elearning_project/.venv/bin/python",
+    "-m",
+    "flake8",
+    "--config",
+    "./backend/elearning_project/.flake8"
+  ]
+}

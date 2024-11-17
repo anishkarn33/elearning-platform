@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  frontend:
+    build: ./apps/web
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+  backend:
+    build: ./backend/elearning_project
+    command: bash -c 'python manage.py migrate --noinput && python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p 8000 elearner_project.asgi:application'
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://elearner_db:elearner_db@db:5432/elearner_db
+    depends_on:
+      - db
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: elearner_db
+      POSTGRES_PASSWORD: elearner_db
+      POSTGRES_DB: elearner_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:
