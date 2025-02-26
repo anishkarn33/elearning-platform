@@ -1,16 +1,17 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { CldUploadWidget } from "next-cloudinary";
-import { Button } from "./button";
-import { Upload, Check, Loader2 } from "lucide-react";
-import { cloudinaryConfig } from "@/lib/cloudinary";
+import { useState } from "react"
+import { cloudinaryConfig } from "@/lib/cloudinary"
+import { Check, Loader2, Upload } from "lucide-react"
+import { CldUploadWidget } from "next-cloudinary"
+
+import { Button } from "./button"
 
 interface CloudinaryUploadProps {
-  onUploadComplete: (url: string, fileName: string) => void;
-  accept?: string;
-  fileType?: string;
-  courseId?: number;
+  onUploadComplete: (url: string, fileName: string) => void
+  accept?: string
+  fileType?: string
+  courseId?: number
 }
 
 export function CloudinaryUpload({
@@ -19,8 +20,8 @@ export function CloudinaryUpload({
   fileType = "document",
   courseId,
 }: CloudinaryUploadProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const [isUploaded, setIsUploaded] = useState(false);
+  const [isUploading, setIsUploading] = useState(false)
+  const [isUploaded, setIsUploaded] = useState(false)
 
   return (
     <CldUploadWidget
@@ -29,51 +30,46 @@ export function CloudinaryUpload({
         maxFiles: 1,
         resourceType: "auto",
         folder: `course-materials/${courseId || "general"}/${fileType}`,
-        clientAllowedFormats: accept?.split(",").map(type => 
-          type.replace(".", "").replace("*", "")),
+        clientAllowedFormats: accept
+          ?.split(",")
+          .map((type) => type.replace(".", "").replace("*", "")),
       }}
       onUpload={(result, widget) => {
-        setIsUploading(false);
-        if (result.event !== "success") return;
-        
-        const info = result.info as any;
-        const url = info.secure_url;
-        const fileName = info.original_filename;
-        
-        onUploadComplete(url, fileName);
-        setIsUploaded(true);
-        widget.close();
+        setIsUploading(false)
+        if (result.event !== "success") return
+
+        const info = result.info as any
+        const url = info.secure_url
+        const fileName = info.original_filename
+
+        onUploadComplete(url, fileName)
+        setIsUploaded(true)
+        widget.close()
       }}
       onOpen={() => {
-        setIsUploading(true);
+        setIsUploading(true)
       }}
     >
       {({ open }) => (
         <Button
           type="button"
           variant="outline"
-          onClick={() => open()}
+          onClick={(e) => {
+            e.stopPropagation() // Stop event from propagating to parent dialog
+            open()
+          }}
           disabled={isUploading}
           className="w-full"
         >
           {isUploading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Uploading...
-            </>
+            <>Loading...</>
           ) : isUploaded ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              File uploaded
-            </>
+            <>File uploaded</>
           ) : (
-            <>
-              <Upload className="mr-2 h-4 w-4" />
-              Choose file
-            </>
+            <>Choose file</>
           )}
         </Button>
       )}
     </CldUploadWidget>
-  );
+  )
 }

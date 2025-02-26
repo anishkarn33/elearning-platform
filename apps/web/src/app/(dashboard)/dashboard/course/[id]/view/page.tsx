@@ -6,7 +6,6 @@ import { useParams } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { CloudinaryUpload } from "@/components/ui/cloudinary-upload"
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { DirectFileUpload } from "@/components/ui/direct-file-upload"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,13 +95,13 @@ export default function Component() {
   const getFileIcon = (type: COURSE_MATERIAL_TYPE) => {
     switch (type) {
       case "video":
-        return <Video className="h-6 w-6" />
+        return <Video className="size-6" />
       case "document":
-        return <FileText className="h-6 w-6" />
+        return <FileText className="size-6" />
       case "image":
-        return <ImageIcon className="h-6 w-6" />
+        return <ImageIcon className="size-6" />
       default:
-        return <File className="h-6 w-6" />
+        return <File className="size-6" />
     }
   }
 
@@ -157,13 +157,13 @@ export default function Component() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto flex items-center justify-between p-4">
           <div className="flex items-center">
             <Link href={routes.DASHBOARD}>
               <div className="p-2">
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className="size-4" />
               </div>
             </Link>
             <h1 className="text-2xl font-bold">{courseData?.title}</h1>
@@ -172,7 +172,7 @@ export default function Component() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6 flex items-center justify-between">
           <h2 className="text-3xl font-bold">Course Materials</h2>
           <Dialog
             open={isUploadDialogOpen}
@@ -180,10 +180,10 @@ export default function Component() {
           >
             <DialogTrigger asChild>
               <Button>
-                <Upload className="mr-2 h-4 w-4" /> Upload New Material
+                <Upload className="mr-2 size-4" /> Upload New Material
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Upload New Material</DialogTitle>
                 <DialogDescription>
@@ -191,7 +191,7 @@ export default function Component() {
                   and upload the file.
                 </DialogDescription>
               </DialogHeader>
-              <form className="grid gap-4 py-4">
+              <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="title" className="text-left">
                     Title
@@ -209,7 +209,7 @@ export default function Component() {
                   </Label>
                   <select
                     id="type"
-                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring col-span-3 flex h-10 w-full rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={newType}
                     onChange={(e) => setNewType(e.target.value)}
                   >
@@ -221,19 +221,95 @@ export default function Component() {
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-left">File</Label>
                   <div className="col-span-3">
-                    <CloudinaryUpload
+                    <DirectFileUpload
                       onUploadComplete={handleFileUploadComplete}
                       accept={getAcceptAttributeForFileType(newType)}
                       courseId={parseInt(params.id, 10)}
                       fileType={newType}
                     />
                     {newCoverUrl && (
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="mt-1 text-xs text-green-600">
                         File uploaded successfully
                       </p>
                     )}
                   </div>
                 </div>
+
+                {/* File preview section - add this */}
+                {newCoverUrl && (
+                  <div className="mb-4 mt-2">
+                    <div className="rounded-md border p-4">
+                      <p className="mb-2 text-sm font-medium">Preview:</p>
+
+                      {/* Make each preview container have a consistent max height */}
+                      <div className="max-h-[200px] overflow-auto">
+                        {newType === "image" && (
+                          <div className="overflow-hidden rounded-lg">
+                            <img
+                              src={newCoverUrl}
+                              alt={newFileName}
+                              className="h-auto max-h-[180px] w-full object-contain"
+                            />
+                          </div>
+                        )}
+
+                        {newType === "video" && (
+                          <div className="overflow-hidden rounded-lg">
+                            <video
+                              controls
+                              className="max-h-[180px] w-full"
+                              src={newCoverUrl}
+                            >
+                              Your browser does not support the video tag.
+                            </video>
+                          </div>
+                        )}
+
+                        {newType === "document" &&
+                          newCoverUrl.toLowerCase().endsWith(".pdf") && (
+                            <div className="h-[180px] overflow-hidden rounded-lg border">
+                              <iframe
+                                src={`${newCoverUrl}#toolbar=0&navpanes=0`}
+                                className="size-full"
+                                title={newFileName}
+                              />
+                            </div>
+                          )}
+
+                        {newType === "document" &&
+                          !newCoverUrl.toLowerCase().endsWith(".pdf") && (
+                            <div className="flex flex-col items-center justify-center rounded-lg border p-4">
+                              <FileText className="text-muted-foreground mb-2 size-12" />
+                              <p className="text-sm">{newFileName}</p>
+                            </div>
+                          )}
+                      </div>
+
+                      {/* Make URL section collapsible or compact */}
+                      <div className="mt-3">
+                        <details className="text-xs">
+                          <summary className="cursor-pointer font-medium">
+                            URL
+                          </summary>
+                          <p className="text-muted-foreground mt-1 break-all text-xs">
+                            {newCoverUrl}
+                          </p>
+                        </details>
+                      </div>
+
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(newCoverUrl, "_blank")}
+                        >
+                          Open in New Tab
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="duration" className="text-left">
                     Duration
@@ -256,8 +332,8 @@ export default function Component() {
                     onChange={(e) => setNewDescription(e.target.value)}
                   />
                 </div>
-              </form>
-              <DialogFooter>
+              </div>
+              <DialogFooter className="bg-background sticky bottom-0 pt-2">
                 <Button
                   type="submit"
                   onClick={handleCreateCourseMaterial}
@@ -270,7 +346,7 @@ export default function Component() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Material List</CardTitle>
@@ -307,22 +383,22 @@ export default function Component() {
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
+                            <Button variant="ghost" className="size-8 p-0">
                               <span className="sr-only">Open menu</span>
-                              <MoreVertical className="h-4 w-4" />
+                              <MoreVertical className="size-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem>
-                              <Pencil className="mr-2 h-4 w-4" /> Edit
+                              <Pencil className="mr-2 size-4" /> Edit
                             </DropdownMenuItem>
                             <DropdownMenuItem>
-                              <Upload className="mr-2 h-4 w-4" /> Update File
+                              <Upload className="mr-2 size-4" /> Update File
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-red-600">
-                              <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              <Trash2 className="mr-2 size-4" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -341,29 +417,63 @@ export default function Component() {
             <CardContent>
               {selectedMaterial ? (
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">
+                  <h3 className="mb-2 text-lg font-semibold">
                     {selectedMaterial.title}
                   </h3>
                   <p className="text-muted-foreground mb-4">
                     Type:{" "}
                     {COURSE_MATERIAL_TYPE_LABELS_MAP[selectedMaterial.fileType]}
                   </p>
+
+                  {/* File preview based on type */}
                   {selectedMaterial.fileType === COURSE_MATERIAL_TYPE.VIDEO && (
-                    <div className="aspect-video bg-muted flex items-center justify-center rounded-lg">
-                      <Video className="h-16 w-16 text-muted-foreground" />
+                    <div className="overflow-hidden rounded-lg">
+                      <video
+                        controls
+                        className="w-full"
+                        src={selectedMaterial.url}
+                        poster={selectedMaterial.thumnailUrl} // Optional: add if you have thumbnails
+                      >
+                        Your browser does not support the video tag.
+                      </video>
                     </div>
                   )}
-                  {selectedMaterial.fileType ===
-                    COURSE_MATERIAL_TYPE.DOCUMENT && (
-                    <div className="aspect-[3/4] bg-muted flex items-center justify-center rounded-lg">
-                      <FileText className="h-16 w-16 text-muted-foreground" />
-                    </div>
-                  )}
+
                   {selectedMaterial.fileType === COURSE_MATERIAL_TYPE.IMAGE && (
-                    <div className="aspect-square bg-muted flex items-center justify-center rounded-lg">
-                      <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                    <div className="overflow-hidden rounded-lg">
+                      <img
+                        src={selectedMaterial.url}
+                        alt={selectedMaterial.title}
+                        className="h-auto w-full object-contain"
+                      />
                     </div>
                   )}
+
+                  {selectedMaterial.fileType ===
+                    COURSE_MATERIAL_TYPE.DOCUMENT &&
+                    (selectedMaterial.url?.toLowerCase().endsWith(".pdf") ? (
+                      <div className="aspect-[3/4] overflow-hidden rounded-lg border">
+                        <iframe
+                          src={`${selectedMaterial.url}#toolbar=0&navpanes=0`}
+                          className="size-full"
+                          title={selectedMaterial.title}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center rounded-lg border p-6">
+                        <FileText className="text-muted-foreground mb-4 size-16" />
+                        <Button asChild>
+                          <a
+                            href={selectedMaterial.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Download Document
+                          </a>
+                        </Button>
+                      </div>
+                    ))}
+
                   <div className="mt-4">
                     <p>
                       <strong>Hours:</strong> {selectedMaterial.duration}
@@ -372,6 +482,12 @@ export default function Component() {
                       <strong>Uploaded:</strong>{" "}
                       {formatDate(selectedMaterial.createdAt)}
                     </p>
+                    {selectedMaterial.description && (
+                      <div className="mt-2">
+                        <strong>Description:</strong>
+                        <p className="mt-1">{selectedMaterial.description}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
