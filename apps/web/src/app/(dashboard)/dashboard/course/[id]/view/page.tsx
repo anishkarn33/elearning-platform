@@ -6,6 +6,7 @@ import { useParams } from "next/navigation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CloudinaryUpload } from "@/components/ui/cloudinary-upload"
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ export default function Component() {
   // new course states
   const [newTitle, setNewTitle] = useState("")
   const [newCoverUrl, setNewCoverUrl] = useState("")
+  const [newFileName, setNewFileName] = useState("")
   const [newType, setNewType] = useState("document")
   const [newDuration, setNewDuration] = useState("")
   const [newDescription, setNewDescription] = useState("")
@@ -136,6 +138,24 @@ export default function Component() {
     )
   }
 
+  const handleFileUploadComplete = (url: string, fileName: string) => {
+    setNewCoverUrl(url)
+    setNewFileName(fileName)
+  }
+
+  const getAcceptAttributeForFileType = (type: string) => {
+    switch (type) {
+      case "video":
+        return "video/*"
+      case "document":
+        return ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+      case "image":
+        return "image/*"
+      default:
+        return "*"
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
@@ -184,26 +204,35 @@ export default function Component() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="cover_url" className="text-left">
-                    Cover URL
-                  </Label>
-                  <Input
-                    id="cover_url"
-                    className="col-span-3"
-                    value={newCoverUrl}
-                    onChange={(e) => setNewCoverUrl(e.target.value)}
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="type" className="text-left">
-                    Category
+                    Type
                   </Label>
-                  <Input
+                  <select
                     id="type"
-                    className="col-span-3"
+                    className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     value={newType}
                     onChange={(e) => setNewType(e.target.value)}
-                  />
+                  >
+                    <option value="document">Document</option>
+                    <option value="video">Video</option>
+                    <option value="image">Image</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label className="text-left">File</Label>
+                  <div className="col-span-3">
+                    <CloudinaryUpload
+                      onUploadComplete={handleFileUploadComplete}
+                      accept={getAcceptAttributeForFileType(newType)}
+                      courseId={parseInt(params.id, 10)}
+                      fileType={newType}
+                    />
+                    {newCoverUrl && (
+                      <p className="text-xs text-green-600 mt-1">
+                        File uploaded successfully
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="duration" className="text-left">
@@ -229,7 +258,11 @@ export default function Component() {
                 </div>
               </form>
               <DialogFooter>
-                <Button type="submit" onClick={handleCreateCourseMaterial}>
+                <Button
+                  type="submit"
+                  onClick={handleCreateCourseMaterial}
+                  disabled={!newTitle || !newCoverUrl}
+                >
                   Upload
                 </Button>
               </DialogFooter>

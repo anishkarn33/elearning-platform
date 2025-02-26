@@ -29,6 +29,11 @@ export default function UserMenu() {
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
+        <Link href={routes.DASHBOARD_COURSES} className="w-full">
+          <Button variant="ghost" className="w-full justify-start">
+            <span>Dashboard</span>
+          </Button>
+        </Link>
         <Link href={routes.PROFILE} className="w-full">
           <Button variant="ghost" className="w-full justify-start">
             <span>Profile</span>
