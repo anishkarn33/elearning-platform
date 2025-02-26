@@ -72,6 +72,22 @@ export default function Component() {
   const [newDuration, setNewDuration] = useState("")
   const [newDescription, setNewDescription] = useState("")
 
+  // Add these near your other state variables
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isFileUpdateDialogOpen, setIsFileUpdateDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [editingMaterial, setEditingMaterial] =
+    useState<Nullable<CourseMaterial>>(null)
+
+  // Edit form states
+  const [editTitle, setEditTitle] = useState("")
+  const [editDuration, setEditDuration] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+
+  // File update states
+  const [updatedFileUrl, setUpdatedFileUrl] = useState("")
+  const [updatedFileName, setUpdatedFileName] = useState("")
+
   const { data, isLoading, refetch } = CourseApi.useGetCourseByIdQuery(
     parseInt(params.id, 10)
   )
@@ -91,6 +107,12 @@ export default function Component() {
 
   const [triggerCreateCourseMaterial, newCourseMaterialResult] =
     CourseApi.useCreateCourseMaterialMutation()
+
+  const [triggerUpdateCourseMaterial, updateCourseMaterialResult] =
+    CourseApi.useUpdateCourseMaterialMutation()
+
+  const [triggerDeleteCourseMaterial, deleteCourseMaterialResult] =
+    CourseApi.useDeleteCourseMaterialMutation()
 
   const getFileIcon = (type: COURSE_MATERIAL_TYPE) => {
     switch (type) {
@@ -154,6 +176,127 @@ export default function Component() {
       default:
         return "*"
     }
+  }
+
+  // Edit material handlers
+  const handleEditMaterial = (
+    material: CourseMaterial,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation() // Prevent material selection
+    setEditingMaterial(material)
+    setEditTitle(material.title)
+    setEditDuration(material.duration || "")
+    setEditDescription(material.description || "")
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateCourseMaterial = async () => {
+    if (!editingMaterial) return
+
+    const updatedMaterial = {
+      course_id: editingMaterial.courseId,
+      title: editTitle,
+      url: editingMaterial.url,
+      duration: editDuration,
+      file_type: editingMaterial.fileType,
+      description: editDescription,
+    }
+
+    toast.promise(
+      triggerUpdateCourseMaterial({
+        id: parseInt(params.id, 10),
+        materialId: editingMaterial.id,
+        body: updatedMaterial,
+      }).unwrap(),
+      {
+        loading: "Updating...",
+        success: async () => {
+          await refetchMaterials()
+          setIsEditDialogOpen(false)
+          return "Material updated successfully"
+        },
+        error: "Error updating material",
+      }
+    )
+  }
+
+  // Update file handlers
+  const handleUpdateFile = (material: CourseMaterial, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent material selection
+    setEditingMaterial(material)
+    setUpdatedFileUrl("")
+    setUpdatedFileName("")
+    setIsFileUpdateDialogOpen(true)
+  }
+
+  const handleUpdateFileComplete = (url: string, fileName: string) => {
+    setUpdatedFileUrl(url)
+    setUpdatedFileName(fileName)
+  }
+
+  const handleSubmitFileUpdate = async () => {
+    if (!editingMaterial || !updatedFileUrl) return
+
+    const updatedMaterial = {
+      course_id: editingMaterial.courseId,
+      title: editingMaterial.title,
+      url: updatedFileUrl,
+      duration: editingMaterial.duration,
+      file_type: editingMaterial.fileType,
+      description: editingMaterial.description,
+    }
+
+    toast.promise(
+      triggerUpdateCourseMaterial({
+        id: parseInt(params.id, 10),
+        materialId: editingMaterial.id,
+        body: updatedMaterial,
+      }).unwrap(),
+      {
+        loading: "Updating file...",
+        success: async () => {
+          await refetchMaterials()
+          setIsFileUpdateDialogOpen(false)
+          return "File updated successfully"
+        },
+        error: "Error updating file",
+      }
+    )
+  }
+
+  // Delete material handlers
+  const handleDeleteDialog = (
+    material: CourseMaterial,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation() // Prevent material selection
+    setEditingMaterial(material)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const handleDeleteMaterial = async () => {
+    if (!editingMaterial) return
+
+    toast.promise(
+      triggerDeleteCourseMaterial({
+        id: parseInt(params.id, 10),
+        materialId: editingMaterial.id,
+      }).unwrap(),
+      {
+        loading: "Deleting...",
+        success: async () => {
+          await refetchMaterials()
+          // Clear selected material if we deleted the one being viewed
+          if (selectedMaterial?.id === editingMaterial.id) {
+            setSelectedMaterial(null)
+          }
+          setIsDeleteDialogOpen(false)
+          return "Material deleted successfully"
+        },
+        error: "Error deleting material",
+      }
+    )
   }
 
   return (
@@ -390,14 +533,21 @@ export default function Component() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => handleEditMaterial(material, e)}
+                            >
                               <Pencil className="mr-2 size-4" /> Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => handleUpdateFile(material, e)}
+                            >
                               <Upload className="mr-2 size-4" /> Update File
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-600">
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={(e) => handleDeleteDialog(material, e)}
+                            >
                               <Trash2 className="mr-2 size-4" /> Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -499,6 +649,166 @@ export default function Component() {
           </Card>
         </div>
       </main>
+
+      {/* Edit Material Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Material</DialogTitle>
+            <DialogDescription>
+              Update the details for this course material.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="editTitle" className="text-left">
+                Title
+              </Label>
+              <Input
+                id="editTitle"
+                className="col-span-3"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="editDuration" className="text-left">
+                Duration
+              </Label>
+              <Input
+                id="editDuration"
+                className="col-span-3"
+                value={editDuration}
+                onChange={(e) => setEditDuration(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="editDescription" className="text-left">
+                Description
+              </Label>
+              <Textarea
+                id="editDescription"
+                className="col-span-3"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateCourseMaterial} disabled={!editTitle}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Update File Dialog */}
+      <Dialog
+        open={isFileUpdateDialogOpen}
+        onOpenChange={setIsFileUpdateDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update File</DialogTitle>
+            <DialogDescription>
+              Upload a new file for "{editingMaterial?.title}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label className="text-left">Upload New File</Label>
+              <DirectFileUpload
+                onUploadComplete={handleUpdateFileComplete}
+                accept={
+                  editingMaterial
+                    ? getAcceptAttributeForFileType(editingMaterial.fileType)
+                    : "*"
+                }
+                courseId={parseInt(params.id, 10)}
+                fileType={editingMaterial?.fileType || "document"}
+              />
+            </div>
+
+            {updatedFileUrl && (
+              <div className="rounded-md border p-4">
+                <p className="mb-2 text-sm font-medium">Preview:</p>
+
+                <div className="max-h-[200px] overflow-auto">
+                  {editingMaterial?.fileType === "image" && (
+                    <div className="overflow-hidden rounded-lg">
+                      <img
+                        src={updatedFileUrl}
+                        alt={updatedFileName}
+                        className="h-auto max-h-[180px] w-full object-contain"
+                      />
+                    </div>
+                  )}
+
+                  {editingMaterial?.fileType === "video" && (
+                    <div className="overflow-hidden rounded-lg">
+                      <video
+                        controls
+                        className="max-h-[180px] w-full"
+                        src={updatedFileUrl}
+                      >
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  )}
+
+                  {editingMaterial?.fileType === "document" && (
+                    <div className="flex flex-col items-center justify-center p-4">
+                      <FileText className="mb-2 h-12 w-12 text-muted-foreground" />
+                      <p className="text-sm">{updatedFileName}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsFileUpdateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitFileUpdate} disabled={!updatedFileUrl}>
+              Update File
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{editingMaterial?.title}"? This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteMaterial}>
+              Delete Material
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
