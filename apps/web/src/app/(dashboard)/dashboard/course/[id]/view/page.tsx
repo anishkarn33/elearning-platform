@@ -534,6 +534,11 @@ export default function Component() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem
+                              onClick={(e) => setSelectedMaterial(material)}
+                            >
+                              <File className="mr-2 size-4" /> View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={(e) => handleEditMaterial(material, e)}
                             >
                               <Pencil className="mr-2 size-4" /> Edit
